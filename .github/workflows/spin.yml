@@ -1,0 +1,51 @@
+name: 🎡 PTCL Spin Bot
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_number:
+        description: 'PTCL Number (03XXXXXXXXX)'
+        required: true
+        default: '03347417367'
+
+  schedule:
+    - cron: '0 5 * * *'   # 10:00 AM PKT daily
+
+jobs:
+  spin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 🔧 Install Tesseract (fallback)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr tesseract-ocr-eng
+
+      - name: 📦 Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🎡 Run PTCL Spin Bot
+        env:
+          TARGET_NUMBER: ${{ github.event.inputs.target_number || '03347417367' }}
+        run: python bot.py
+
+      - name: 📸 Upload captcha debug
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: captcha-debug
+          path: captcha.png
+          if-no-files-found: ignore
+          retention-days: 3
